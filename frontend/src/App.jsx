@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom"; // Import Routes for navigatio
 import { getTestMessage } from "./api";
 
 import Login from "./components/Login/Login"; // Import the Login page
+import Register from "./components/Register/Register";
 import {
   MDBBtn,
   MDBContainer,
@@ -27,6 +28,8 @@ function App() {
     <Routes>
       {/* Default route - Login Page */}
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
 
       {/* Example Test Page (React-Django Connection) */}
       <Route

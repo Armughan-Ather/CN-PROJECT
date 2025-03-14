@@ -1,23 +1,39 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import axios from "axios";
 import {
   MDBContainer,
   MDBCard,
   MDBCardBody,
+  MDBTypography,
   MDBInput,
   MDBBtn,
-  MDBTypography
 } from "mdb-react-ui-kit";
-import "./Login.css"; 
-
+import "./Login.css";
 
 export default function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e) => {
-    e.preventDefault();
-    console.log("Logging in with", email, password);
-    // Add authentication logic here
+  const handleLogin = async (e) => {
+    e.preventDefault(); // Prevent default form submission
+
+    try {
+      const response = await axios.post("http://127.0.0.1:8000/api/login/", {
+        username,
+        password,
+      });
+
+      // Store authentication tokens
+      localStorage.setItem("access_token", response.data.access);
+      localStorage.setItem("refresh_token", response.data.refresh);
+      localStorage.setItem("username", response.data.username);
+
+      alert("Login Successful!");
+      // Redirect user to chat page (if needed)
+      window.location.href = "/chat";
+    } catch (error) {
+      alert("Invalid Credentials");
+    }
   };
 
   return (
@@ -29,10 +45,10 @@ export default function Login() {
           </MDBTypography>
           <form onSubmit={handleLogin}>
             <MDBInput
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               className="mb-3"
               required
             />
