@@ -8,20 +8,26 @@ from api.models import User  # Import User Model
 
 User = get_user_model()
 
-# 🔹 User Registration API (Signup)
 @api_view(['POST'])
 def register_user(request):
     data = request.data
+
+    if not data.get("username") or not data.get("email") or not data.get("password"):
+        return Response({"error": "All fields are required"}, status=status.HTTP_400_BAD_REQUEST)
+
     if User.objects.filter(username=data['username']).exists():
         return Response({"error": "Username already taken"}, status=status.HTTP_400_BAD_REQUEST)
 
     if User.objects.filter(email=data['email']).exists():
         return Response({"error": "Email already registered"}, status=status.HTTP_400_BAD_REQUEST)
 
+    if len(data["password"]) < 6:
+        return Response({"error": "Password must be at least 6 characters"}, status=status.HTTP_400_BAD_REQUEST)
+
     user = User.objects.create(
         username=data['username'],
         email=data['email'],
-        password=make_password(data['password'])  # Hash Password
+        password=make_password(data['password'])  # Hash Password for security
     )
 
     return Response({"message": "User registered successfully"}, status=status.HTTP_201_CREATED)
@@ -29,12 +35,14 @@ def register_user(request):
 @api_view(['POST'])
 def login_user(request):
     data=request.data
+    if not data.get("username") or not data.get("password"):
+        return Response({"error":"Both username and password are required"},status=status.HTTP_400_BAD_REQUEST)
     try:
         user=User.objects.get(username=data['username'])
     except User.DoesNotExist:
-        return Response({"error" : "Invalid Username"},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error" : "Invalid Username"},status=status.HTTP_401_UNAUTHORIZED)
     if not user.check_password(data['password']):
-        return Response({"error":"Incorrect Password"},status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error":"Incorrect Password"},status=status.HTTP_401_UNAUTHORIZED)
     
     refresh=RefreshToken.for_user(user)
     return Response({
@@ -66,8 +74,11 @@ def login_user(request):
 # 🔹 Logout API (Blacklist Token)
 @api_view(['POST'])
 def logout_user(request):
+    
     try:
         refresh_token = request.data["refresh"]
+        if not refresh_token:
+            return Response({"error":"Refresh Token is required"},status=status.HTTP_400_BAD_REQUEST)
         token = RefreshToken(refresh_token)
         token.blacklist()  # Blacklist Token
         return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
