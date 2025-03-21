@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import make_password
@@ -73,14 +74,24 @@ def login_user(request):
 
 # 🔹 Logout API (Blacklist Token)
 @api_view(['POST'])
+#@permission_classes([IsAuthenticated])
 def logout_user(request):
-    
     try:
-        refresh_token = request.data["refresh"]
+        refresh_token = request.data.get("refresh")
         if not refresh_token:
-            return Response({"error":"Refresh Token is required"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Refresh Token is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        #print("Received Refresh Token:", refresh_token)  # Debugging line
+
         token = RefreshToken(refresh_token)
+        #print("Decoded Token:", token.payload)  # Debugging line
+
         token.blacklist()  # Blacklist Token
         return Response({"message": "Logged out successfully"}, status=status.HTTP_200_OK)
+
     except Exception as e:
-        return Response({"error": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid token", "details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def test():
+    return Response({"message": "test"})
