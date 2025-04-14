@@ -7,8 +7,8 @@ from api.models import User  # Import User Model
 
 User = get_user_model()
 
-#@permission_classes([IsAuthenticated])
 
+@permission_classes([IsAuthenticated])
 @api_view(['GET'])
 def get_chat_history(request, receiver_username):
     sender = request.user
@@ -27,6 +27,3 @@ def get_chat_history(request, receiver_username):
     ]
 
     return Response(chat_history)
-
-def chat_history(request, username):
-    return JsonResponse({"message": f"Chat history for {username}"})
