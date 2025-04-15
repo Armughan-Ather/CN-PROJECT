@@ -9,3 +9,12 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} to {self.receiver} at {self.timestamp}"
+
+
+# chat/models.py
+
+class VoiceMessage(models.Model):
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="voice_sent")
+    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="voice_received")
+    audio_url = models.URLField()
+    timestamp = models.DateTimeField(auto_now_add=True)
