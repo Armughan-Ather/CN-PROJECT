@@ -5,4 +5,3 @@ venv/
 backend/__pycache__/
 node_modules/
 db.sqlite3
-firebaseServiceAccountKey.json
