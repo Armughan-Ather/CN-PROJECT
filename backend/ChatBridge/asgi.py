@@ -34,7 +34,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ChatBridge.settings")
 django_asgi_app = get_asgi_application()
 
 application = ProtocolTypeRouter({
-    "http": django_asgi_app,  # 👈 Now HTTP requests will work
+    "http": django_asgi_app,  
     "websocket": AuthMiddlewareStack(
         URLRouter(
             chat.routing.websocket_urlpatterns
