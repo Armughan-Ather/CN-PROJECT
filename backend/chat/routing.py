@@ -1,15 +1,11 @@
-'''
-from django.urls import re_path
-from .consumers import ChatConsumer  # Import WebSocket consumer
-
-websocket_urlpatterns = [
-    re_path(r'ws/chat/(?P<username>\w+)/$', ChatConsumer.as_asgi()),  # WebSocket URL
-]
-'''
 
 from django.urls import path
 from . import consumers
+from django.urls import re_path
+
+    
+
 
 websocket_urlpatterns = [
     path("ws/chat/<str:username>/", consumers.ChatConsumer.as_asgi()),
-]
+    re_path(r'ws/call/(?P<username>\w+)/$', consumers.CallSignalingConsumer.as_asgi()),]
