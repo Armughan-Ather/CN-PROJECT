@@ -34,6 +34,49 @@ def get_chat_history(request, receiver_username):
     ]
 
     return Response(chat_history)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def recent_contacts(request):
+    user = request.user
+
+    text_partners = Message.objects.filter(
+        Q(sender=user) | Q(receiver=user)
+    ).values('sender', 'receiver', 'timestamp')
+
+    all_partners = set()
+    for entry in text_partners:
+        if entry['sender'] != user.id:
+            all_partners.add(entry['sender'])
+        if entry['receiver'] != user.id:
+            all_partners.add(entry['receiver'])
+
+    contact_data = []
+    for partner_id in all_partners:
+        partner = User.objects.get(id=partner_id)
+        last_msg = Message.objects.filter(
+            Q(sender=user, receiver=partner) | Q(sender=partner, receiver=user)
+        ).order_by('-timestamp').first()
+
+        contact_data.append({
+            "username": partner.username,
+            "lastMessage": last_msg.content if last_msg else "",
+            "timestamp": last_msg.timestamp if last_msg else None,
+        })
+
+    contact_data.sort(key=lambda x: x['timestamp'], reverse=True)
+    return Response(contact_data)
+
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def search_users(request):
+    query = request.GET.get('q', '')
+    if not query:
+        return Response([])
+
+    users = User.objects.filter(username__icontains=query).exclude(username=request.user.username)
+    return Response([{"username": user.username} for user in users])
 
 
 @api_view(['POST'])
@@ -91,70 +134,6 @@ def get_voice_history(request, receiver_username):
     return Response(data)
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def recent_contacts(request):
-    user = request.user
-
-    # Get unique users the current user has messaged or received from (text messages)
-    text_partners = Message.objects.filter(
-        Q(sender=user) | Q(receiver=user)
-    ).values('sender', 'receiver', 'timestamp')
-
-    # Get unique users from voice messages
-    voice_partners = VoiceMessage.objects.filter(
-        Q(sender=user) | Q(receiver=user)
-    ).values('sender', 'receiver', 'timestamp')
-
-    all_partners = set()
-    for entry in list(text_partners) + list(voice_partners):
-        if entry['sender'] != user.id:
-            all_partners.add(entry['sender'])
-        if entry['receiver'] != user.id:
-            all_partners.add(entry['receiver'])
-
-    contact_data = []
-    for partner_id in all_partners:
-        partner = User.objects.get(id=partner_id)
-
-        # Get last message timestamp and content
-        last_text = Message.objects.filter(
-            (Q(sender=user, receiver=partner) | Q(sender=partner, receiver=user))
-        ).order_by('-timestamp').first()
-
-        last_voice = VoiceMessage.objects.filter(
-            (Q(sender=user, receiver=partner) | Q(sender=partner, receiver=user))
-        ).order_by('-timestamp').first()
-
-        # Choose the latest one
-        last_entry = None
-        if last_text and last_voice:
-            last_entry = last_text if last_text.timestamp > last_voice.timestamp else last_voice
-        elif last_text:
-            last_entry = last_text
-        elif last_voice:
-            last_entry = last_voice
-
-        contact_data.append({
-            "username": partner.username,
-            "last_message": getattr(last_entry, 'content', 'Voice Message') if last_entry else '',
-            "timestamp": last_entry.timestamp if last_entry else None
-        })
-
-    # Sort by latest message
-    contact_data.sort(key=lambda x: x['timestamp'], reverse=True)
-    return Response(contact_data)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def search_users(request):
-    query = request.GET.get('q', '')
-    if not query:
-        return Response([])
-
-    users = User.objects.filter(username__icontains=query).exclude(username=request.user.username)
-    return Response([{"username": user.username} for user in users])
 
 
 @api_view(['GET'])

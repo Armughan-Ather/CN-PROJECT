@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { useAuth } from "../../assets/AuthContext"; // ✅ Import context
 import {
   MDBContainer,
   MDBCard,
@@ -13,9 +14,10 @@ import "./Login.css";
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const { login } = useAuth(); // ✅ use context
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Prevent default form submission
+    e.preventDefault();
 
     try {
       const response = await axios.post("http://127.0.0.1:8000/api/login/", {
@@ -23,13 +25,10 @@ export default function Login() {
         password,
       });
 
-      // Store authentication tokens
-      localStorage.setItem("access_token", response.data.access);
-      localStorage.setItem("refresh_token", response.data.refresh);
-      localStorage.setItem("username", response.data.username);
+      // ✅ Use context login method
+      login(response.data.username, response.data.access, response.data.refresh);
 
       alert("Login Successful!");
-      // Redirect user to chat page (if needed)
       window.location.href = "/chat";
     } catch (error) {
       alert("Invalid Credentials");

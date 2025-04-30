@@ -4,11 +4,12 @@ from .views import get_combined_chat_history
 
 
 urlpatterns = [
-    #path('chat-history/<str:receiver_username>/', get_chat_history, name='chat_history'),
-    path('upload-voice/', upload_voice_message, name='upload_voice_message'),
-    path('voice-messages/<str:receiver_username>/', get_voice_history, name='voice_messages'),
+    path('chat-history/<str:receiver_username>/', get_chat_history, name='chat_history'),
     path('recent-contacts/', recent_contacts, name='recent_contacts'),
     path('search-users/', search_users, name='search_users'),
-    path('chat-history/<str:receiver_username>/', get_combined_chat_history, name='chat_history'),
+    
+    path('upload-voice/', upload_voice_message, name='upload_voice_message'),
+    path('voice-messages/<str:receiver_username>/', get_voice_history, name='voice_messages'),
+    #path('chat-history/<str:receiver_username>/', get_combined_chat_history, name='chat_history'),
 
 ]

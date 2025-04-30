@@ -1,176 +1,691 @@
+// import React, { useEffect, useState, useRef } from 'react';
+// import { useAuth } from '../../assets/AuthContext';
+// import axios from 'axios';
+// import { PhoneCall, Search, Send, ArrowLeft, MoreVertical } from 'lucide-react';
+// import './chat.css';
+// import VoiceCallComponent from '../VoiceCall/VoiceCallComponent';
+
+// const Chat = () => {
+//   const { user } = useAuth();
+//   const [searchQuery, setSearchQuery] = useState('');
+//   const [searchResults, setSearchResults] = useState([]);
+//   const [selectedUser, setSelectedUser] = useState(null);
+//   const [message, setMessage] = useState('');
+//   const [messages, setMessages] = useState([]);
+//   const [showSidebar, setShowSidebar] = useState(true);
+//   const [recentChats, setRecentChats] = useState([]);
+//   const socketRef = useRef(null);
+//   const messagesEndRef = useRef(null);
+
+//   // State for managing voice call UI
+//   const [showCallUI, setShowCallUI] = useState(false);
+//   const [peerConnection, setPeerConnection] = useState(null); // Store peer connection for WebRTC
+
+//   // Auto-scroll to bottom when new messages arrive
+//   useEffect(() => {
+//     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+//   }, [messages]);
+
+//   // Handle WebSocket connection
+//   useEffect(() => {
+//     if (!user || !user.username || !selectedUser) return;
+
+//     const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${selectedUser}/`);
+//     socketRef.current = ws;
+
+//     ws.onopen = () => console.log("WebSocket connected");
+//     ws.onmessage = (event) => {
+//       const data = JSON.parse(event.data);
+
+//       if (
+//         data.sender === selectedUser || data.receiver === selectedUser
+//       ) {
+//         setMessages((prev) => [...prev, data]);
+//       }
+//     };
+//     ws.onclose = () => console.log("WebSocket disconnected");
+
+//     return () => ws.close();
+//   }, [user, selectedUser]);
+
+//   // Fetch recent chats on component mount
+//   useEffect(() => {
+//     if (user && user.accessToken) {
+//       fetchRecentChats();
+//     }
+//   }, [user]);
+
+//   useEffect(() => {
+//     if (selectedUser) {
+//       fetchChatHistory(selectedUser);
+//     }
+//   }, [selectedUser]);
+
+//   // Handle user search
+//   useEffect(() => {
+//     const fetchUsers = async () => {
+//       if (!searchQuery.trim() || !user || !user.accessToken) {
+//         setSearchResults([]);
+//         return;
+//       }
+
+//       try {
+//         const res = await axios.get(`http://127.0.0.1:8000/chat/search-users/?q=${searchQuery}`, {
+//           headers: {
+//             Authorization: `Bearer ${user.accessToken}`,
+//           },
+//         });
+//         setSearchResults(res.data);
+//       } catch (error) {
+//         console.error('Search error:', error);
+//       }
+//     };
+
+//     const delayDebounce = setTimeout(fetchUsers, 300);
+//     return () => clearTimeout(delayDebounce);
+//   }, [searchQuery, user]);
+
+//   // Initiate the voice call (get media and show UI)
+//   const initiateCall = async () => {
+//     try {
+//       await navigator.mediaDevices.getUserMedia({ audio: true });
+//       setShowCallUI(true); // Show the call UI on successful media access
+
+//       // Create a new WebRTC peer connection
+//       const pc = new RTCPeerConnection();
+//       setPeerConnection(pc);
+//       pc.onicecandidate = handleICECandidate;
+//       pc.ontrack = handleTrack;
+
+//       // Handle signaling here (offer, answer, signaling channel)
+//       // Placeholder for signaling code (e.g., send/receive SDP)
+//     } catch (err) {
+//       alert("Microphone permission is required to make a call.");
+//       console.error("Error accessing media devices:", err);
+//     }
+//   };
+
+//   // Handle ICE candidates
+//   const handleICECandidate = (event) => {
+//     if (event.candidate) {
+//       // Send the ICE candidate to the remote peer
+//       console.log('New ICE candidate:', event.candidate);
+//     }
+//   };
+
+//   // Handle remote media tracks
+//   const handleTrack = (event) => {
+//     const remoteStream = event.streams[0];
+//     // Display the remote video/audio
+//     console.log('Received remote stream:', remoteStream);
+//   };
+
+//   // Fetch recent chats
+//   const fetchRecentChats = async () => {
+//     try {
+//       const res = await axios.get('http://127.0.0.1:8000/chat/recent-contacts/', {
+//         headers: {
+//           Authorization: `Bearer ${user.accessToken}`,
+//         },
+//       });
+//       setRecentChats(res.data);
+//     } catch (error) {
+//       console.error('Error fetching recent chats:', error);
+//     }
+//   };
+
+//   // Fetch chat history with a specific user
+//   const fetchChatHistory = async (username) => {
+//     try {
+//       const res = await axios.get(`http://127.0.0.1:8000/chat/chat-history/${username}/`, {
+//         headers: {
+//           Authorization: `Bearer ${user.accessToken}`,
+//         },
+//       });
+//       setMessages(res.data);
+//     } catch (error) {
+//       console.error('Error fetching chat history:', error);
+//       setMessages([]);
+//     }
+//   };
+
+//   // Send message
+//   const sendMessage = () => {
+//     if (!message.trim()) return;
+//     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+//       socketRef.current.send(JSON.stringify({
+//         sender: user.username,
+//         receiver: selectedUser,
+//         message: message.trim(),
+//       }));
+//       setMessage('');
+//     }
+//   };
+
+//   // Format timestamp
+//   const formatTime = (timestamp) => {
+//     if (!timestamp) return '';
+//     const date = new Date(timestamp);
+//     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+//   };
+
+//   // Format date for message grouping
+//   const formatMessageDate = (timestamp) => {
+//     if (!timestamp) return '';
+//     const date = new Date(timestamp);
+//     const today = new Date();
+
+//     if (date.toDateString() === today.toDateString()) {
+//       return 'Today';
+//     }
+
+//     const yesterday = new Date();
+//     yesterday.setDate(yesterday.getDate() - 1);
+//     if (date.toDateString() === yesterday.toDateString()) {
+//       return 'Yesterday';
+//     }
+
+//     return date.toLocaleDateString();
+//   };
+
+//   // Toggle mobile sidebar
+//   const toggleSidebar = () => {
+//     setShowSidebar(!showSidebar);
+//   };
+
+//   // Select a chat user
+//   const selectUserChat = (username) => {
+//     setSelectedUser(username);
+//     setMessages([]);
+//     if (window.innerWidth < 768) {
+//       setShowSidebar(false);
+//     }
+//   };
+
+//   return (
+//     <div className="chat-container">
+//       {/* Sidebar - Chat list */}
+//       <div className={`chat-sidebar ${showSidebar ? 'show' : 'hide'}`}>
+//         <div className="sidebar-header">
+//           <h2>Chats</h2>
+//           <div className="header-icons">
+//             <MoreVertical size={20} className="icon" />
+//           </div>
+//         </div>
+
+//         <div className="search-container">
+//           <div className="search-wrapper">
+//             <Search size={18} className="search-icon" />
+//             <input
+//               type="text"
+//               placeholder="Search or start new chat"
+//               value={searchQuery}
+//               onChange={(e) => setSearchQuery(e.target.value)}
+//               className="search-input"
+//             />
+//           </div>
+//         </div>
+
+//         {searchResults.length > 0 ? (
+//           <ul className="chat-list search-results">
+//             {searchResults.map((u) => (
+//               <li
+//                 key={u.username}
+//                 onClick={() => selectUserChat(u.username)}
+//                 className="chat-list-item"
+//               >
+//                 <div className="avatar">{u.username.charAt(0).toUpperCase()}</div>
+//                 <div className="chat-info">
+//                   <div className="chat-name">{u.username}</div>
+//                 </div>
+//               </li>
+//             ))}
+//           </ul>
+//         ) : (
+//           <ul className="chat-list">
+//             {recentChats.map((chat) => (
+//               <li
+//                 key={chat.username}
+//                 onClick={() => selectUserChat(chat.username)}
+//                 className={`chat-list-item ${selectedUser === chat.username ? 'active' : ''}`}
+//               >
+//                 <div className="avatar">{chat.username.charAt(0).toUpperCase()}</div>
+//                 <div className="chat-info">
+//                   <div className="chat-name">{chat.username}</div>
+//                   <div className="chat-last-message">{chat.lastMessage}</div>
+//                 </div>
+//                 <div className="chat-meta">
+//                   <span className="chat-time">{formatTime(chat.timestamp)}</span>
+//                   {chat.unreadCount > 0 && (
+//                     <span className="unread-count">{chat.unreadCount}</span>
+//                   )}
+//                 </div>
+//               </li>
+//             ))}
+//           </ul>
+//         )}
+//       </div>
+
+//       {/* Main chat area */}
+//       <div className="chat-main">
+//         {selectedUser ? (
+//           <>
+//             <div className="chat-header">
+//               {window.innerWidth < 768 && (
+//                 <ArrowLeft size={24} className="back-button" onClick={toggleSidebar} />
+//               )}
+//               <div className="avatar">{selectedUser.charAt(0).toUpperCase()}</div>
+//               <div className="user-info">
+//                 <h3>{selectedUser}</h3>
+//                 <span className="user-status">Online</span>
+//               </div>
+//               <div className="header-actions">
+//                 <PhoneCall
+//                   size={20}
+//                   className="call-icon"
+//                   onClick={initiateCall}
+//                   title="Call"
+//                 />
+//                 <MoreVertical size={20} className="icon" />
+//               </div>
+//             </div>
+
+//             <div className="messages-container">
+//               {messages.length > 0 ? (
+//                 <div className="messages-list">
+//                   {messages.map((msg, idx) => {
+//                     const isCurrentUser = msg.sender === user.username;
+//                     const messageDate = formatMessageDate(msg.timestamp);
+//                     const showDateHeader = idx === 0 || 
+//                       formatMessageDate(messages[idx - 1]?.timestamp) !== messageDate;
+
+//                     return (
+//                       <React.Fragment key={idx}>
+//                         {showDateHeader && (
+//                           <div className="date-separator">
+//                             <span>{messageDate}</span>
+//                           </div>
+//                         )}
+//                         <div className={`message ${isCurrentUser ? 'sent' : 'received'}`}>
+//                           <div className="message-content">
+//                             {msg.message}
+//                             <span className="message-time">{formatTime(msg.timestamp)}</span>
+//                           </div>
+//                         </div>
+//                       </React.Fragment>
+//                     );
+//                   })}
+//                   <div ref={messagesEndRef} />
+//                 </div>
+//               ) : (
+//                 <div className="empty-chat">
+//                   <p>Start a conversation with {selectedUser}</p>
+//                 </div>
+//               )}
+//             </div>
+
+//             <div className="message-input-container">
+//               <input
+//                 type="text"
+//                 value={message}
+//                 onChange={(e) => setMessage(e.target.value)}
+//                 onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+//                 placeholder="Type a message"
+//                 className="message-input"
+//               />
+//               <button
+//                 onClick={sendMessage}
+//                 className="send-button"
+//                 disabled={!message.trim()}
+//               >
+//                 <Send size={20} />
+//               </button>
+//             </div>
+
+//             {/* Call UI Overlay */}
+//             {showCallUI && (
+//               <div className="call-ui-overlay">
+//                 <div className="call-box">
+//                   <h4>Voice Call with {selectedUser}</h4>
+//                   <VoiceCallComponent username={user.username} receiver={selectedUser} />
+//                   <button className="end-call-btn" onClick={() => setShowCallUI(false)}>
+//                     End Call
+//                   </button>
+//                 </div>
+//               </div>
+//             )}
+//           </>
+//         ) : (
+//           <div className="no-chat-selected">
+//             <div className="welcome-message">
+//               <h3>Welcome to the Chat</h3>
+//               <p>Select a user from the list to start chatting</p>
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default Chat;
+
 import React, { useEffect, useState, useRef } from 'react';
-import { useAuth } from '../../assets/AuthContext';
+import { useAuth } from '../../assets/AuthContext'; // Assuming AuthContext provides { user: { username, accessToken } }
 import axios from 'axios';
 import { PhoneCall, Search, Send, ArrowLeft, MoreVertical } from 'lucide-react';
-import './chat.css';
+import './chat.css'; // Ensure this CSS file exists and is styled
+import VoiceCallComponent from '../VoiceCall/VoiceCallComponent'; // Import the call component
 
 const Chat = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // Get user info from context
+
+  // Component State
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [recentChats, setRecentChats] = useState([]);
-  const socketRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const [selectedUser, setSelectedUser] = useState(null); // The user being chatted with/called
+  const [message, setMessage] = useState(''); // Current message input
+  const [messages, setMessages] = useState([]); // History/live messages for selectedUser
+  const [showSidebar, setShowSidebar] = useState(true); // For mobile responsiveness
+  const [recentChats, setRecentChats] = useState([]); // List of recent chat partners
 
-  // Auto-scroll to bottom when new messages arrive
+  // Refs
+  const chatSocketRef = useRef(null); // Ref for the chat WebSocket connection
+  const messagesEndRef = useRef(null); // Ref to scroll to the bottom of messages
+
+  // --- Voice Call State ---
+  const [isCallActive, setIsCallActive] = useState(false); // Is the call UI currently visible?
+  const [isMakingCall, setIsMakingCall] = useState(false); // Are *we* the one who initiated the call? (Determines isCaller prop)
+  // Note: Handling *incoming* calls needs additional logic (e.g., a persistent signaling listener)
+
+  // --- Effects ---
+
+  // Auto-scroll messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Handle WebSocket connection
-  useEffect(() => {
-    if (!user || !user.username || !selectedUser) return;
-
-    const ws = new WebSocket(`ws://127.0.0.1:8000/ws/chat/${selectedUser}/`);
-    socketRef.current = ws;
-
-    ws.onopen = () => console.log('WebSocket connected');
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setMessages(prev => [...prev, data]);
-    };
-    ws.onclose = () => console.log('WebSocket disconnected');
-
-    // Fetch chat history when a user is selected
-    fetchChatHistory(selectedUser);
-
-    return () => ws.close();
-  }, [selectedUser, user]);
-
-  // Fetch recent chats on component mount
+  // Fetch recent chats when user logs in
   useEffect(() => {
     if (user && user.accessToken) {
       fetchRecentChats();
+    } else {
+      setRecentChats([]); // Clear if no user
     }
-  }, [user]);
+  }, [user]); // Dependency: user object
 
-  // Handle user search
+  // Fetch chat history when a user is selected
+  useEffect(() => {
+    if (selectedUser && user?.accessToken) {
+      fetchChatHistory(selectedUser);
+    } else {
+       setMessages([]); // Clear messages if no user selected or no token
+    }
+    // No need to include fetchChatHistory in dependencies if defined outside/stable
+  }, [selectedUser, user?.accessToken]); // Dependency: selectedUser, user token
+
+  // Handle Chat WebSocket connection
+  useEffect(() => {
+    // Ensure we have a logged-in user and a selected chat partner
+    if (!user?.username || !selectedUser) {
+      // Close existing connection if user logs out or deselects chat
+      if (chatSocketRef.current) {
+        console.log("Closing chat WebSocket (no user/selection).");
+        chatSocketRef.current.close();
+        chatSocketRef.current = null;
+      }
+      return; // Exit effect
+    }
+
+    // Close previous connection if selectedUser changes
+    if (chatSocketRef.current) {
+      console.log(`Chat user changed to ${selectedUser}, closing previous chat WebSocket.`);
+      chatSocketRef.current.close();
+    }
+
+    // Establish WebSocket connection to the user's own endpoint
+    // Assumes backend consumer routes based on sender/receiver in message payload
+    const wsUrl = `ws://127.0.0.1:8000/ws/chat/${user.username}/`;
+    console.log(`Establishing chat WebSocket connection: ${wsUrl}`);
+    const ws = new WebSocket(wsUrl);
+    chatSocketRef.current = ws;
+
+    ws.onopen = () => {
+      console.log(`Chat WebSocket connected for ${user.username}`);
+      // Optional: Send a message indicating user is online or ready
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Chat message received:", data);
+
+        // Check if the message belongs to the currently active chat window
+        const isCurrentChat = (data.sender === user.username && data.receiver === selectedUser) ||
+                              (data.sender === selectedUser && data.receiver === user.username);
+
+        if (isCurrentChat) {
+          // Add message to the current chat window
+          // Ensure message object has a unique key if rendering directly from this data later
+          setMessages((prevMessages) => [...prevMessages, data]);
+        } else {
+          console.log("Received message for a different chat.");
+          // TODO: Implement notification/unread count logic for other chats
+          // You might need to update the `recentChats` state here
+        }
+      } catch (error) {
+        console.error("Failed to parse incoming chat message:", error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error("Chat WebSocket error:", error);
+      // Optional: Add user feedback about connection issues
+    };
+
+    ws.onclose = (event) => {
+      console.log(`Chat WebSocket disconnected for ${user.username}. Code: ${event.code}, Reason: ${event.reason}`);
+      chatSocketRef.current = null; // Clear the ref
+      // Optional: Implement reconnection logic if needed
+    };
+
+    // Cleanup function: Close WebSocket when component unmounts or dependencies change
+    return () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        console.log(`Closing chat WebSocket for ${user.username}.`);
+        ws.close();
+      }
+      chatSocketRef.current = null;
+    };
+    // Dependencies: Reconnect if user logs in/out or selectedUser changes
+  }, [user, selectedUser]);
+
+  // Handle User Search (debounced)
   useEffect(() => {
     const fetchUsers = async () => {
-      if (!searchQuery.trim() || !user || !user.accessToken) {
+      if (!searchQuery.trim() || !user?.accessToken) {
         setSearchResults([]);
         return;
       }
-
       try {
         const res = await axios.get(`http://127.0.0.1:8000/chat/search-users/?q=${searchQuery}`, {
-          headers: {
-            Authorization: `Bearer ${user.accessToken}`,
-          },
+          headers: { Authorization: `Bearer ${user.accessToken}` },
         });
         setSearchResults(res.data);
       } catch (error) {
         console.error('Search error:', error);
+        setSearchResults([]); // Clear results on error
       }
     };
 
+    // Debounce API call
     const delayDebounce = setTimeout(fetchUsers, 300);
-    return () => clearTimeout(delayDebounce);
-  }, [searchQuery, user]);
+    return () => clearTimeout(delayDebounce); // Cleanup timeout
 
-  // Fetch recent chats
+  }, [searchQuery, user?.accessToken]); // Dependencies: search query, user token
+
+  // --- Functions ---
+
+  // Fetch recent chat partners
   const fetchRecentChats = async () => {
+    if (!user?.accessToken) return;
     try {
+      console.log("Fetching recent chats...");
       const res = await axios.get('http://127.0.0.1:8000/chat/recent-contacts/', {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       });
       setRecentChats(res.data);
     } catch (error) {
       console.error('Error fetching recent chats:', error);
+      setRecentChats([]); // Clear on error
     }
   };
 
-  // Fetch chat history with a specific user
+  // Fetch message history for the selected user
   const fetchChatHistory = async (username) => {
+     if (!username || !user?.accessToken) {
+         console.warn("fetchChatHistory skipped: no username or access token.");
+         setMessages([]); // Ensure messages are cleared
+         return;
+     }
+    console.log(`Workspaceing chat history with ${username}...`);
     try {
       const res = await axios.get(`http://127.0.0.1:8000/chat/chat-history/${username}/`, {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       });
-      setMessages(res.data);
+      console.log(`History received for ${username}:`, res.data.length, "messages");
+      setMessages(res.data); // Update messages state
     } catch (error) {
-      console.error('Error fetching chat history:', error);
-      setMessages([]);
+      console.error(`Error fetching chat history for ${username}:`, error);
+      setMessages([]); // Clear messages on error
     }
   };
 
-  // Send message
+  // Send a chat message via WebSocket
   const sendMessage = () => {
-    if (!message.trim()) return;
-    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      socketRef.current.send(JSON.stringify({
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage || !selectedUser || !user?.username) return;
+
+    if (chatSocketRef.current && chatSocketRef.current.readyState === WebSocket.OPEN) {
+      const messageData = {
         sender: user.username,
-        message: message.trim(),
-      }));
-      setMessage('');
+        receiver: selectedUser,
+        message: trimmedMessage,
+        // Add timestamp client-side for optimistic update if needed
+        // timestamp: new Date().toISOString()
+      };
+      console.log("Sending chat message:", messageData);
+      try {
+        chatSocketRef.current.send(JSON.stringify(messageData));
+        // Optimistic UI update (optional but improves perceived speed)
+        // setMessages((prev) => [...prev, { ...messageData, timestamp: new Date().toISOString() }]);
+        setMessage(''); // Clear input field
+      } catch (error) {
+          console.error("Error sending message via WebSocket:", error);
+          alert("Failed to send message. Connection issue?");
+      }
+    } else {
+      console.error('Chat WebSocket is not open. Cannot send message.');
+      alert('Cannot send message. Connection lost. Please refresh or try again.');
     }
   };
 
-  // Handle call functionality
-  const initiateCall = () => {
-    // This would be implemented with your chosen video/voice call solution
-    alert(`Initiating call with ${selectedUser}`);
-    // Placeholder for actual call functionality
-  };
+  // --- Call Handling Functions ---
 
-  // Format timestamp
-  const formatTime = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  // Format date for message grouping
-  const formatMessageDate = (timestamp) => {
-    if (!timestamp) return '';
-    const date = new Date(timestamp);
-    const today = new Date();
-    
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+  // Initiate the call process
+  const handleInitiateCall = () => {
+    if (!selectedUser) {
+      alert('Please select a user to call.');
+      return;
     }
-    
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+    if (isCallActive) {
+      // Should ideally not happen due to button disabling, but good failsafe
+      alert('A call is already in progress.');
+      return;
     }
-    
-    return date.toLocaleDateString();
+    console.log(`Initiating call with ${selectedUser}. Setting call state...`);
+    setIsMakingCall(true); // Set flag indicating *we* are the caller
+    setIsCallActive(true); // Set flag to show the VoiceCallComponent UI
+    // VoiceCallComponent will now mount and handle the WebRTC/Signaling process
   };
 
-  // Toggle mobile sidebar
+  // Callback passed to VoiceCallComponent, triggered when call ends
+  const handleEndCall = () => {
+    console.log('Chat.jsx: handleEndCall triggered by VoiceCallComponent. Resetting state.');
+    setIsCallActive(false); // Hide the call UI
+    setIsMakingCall(false); // Reset the caller flag
+    // Optionally add other cleanup logic here if needed
+  };
+
+  // --- UI Handlers & Formatters ---
+
+  // Toggle sidebar visibility (for mobile)
   const toggleSidebar = () => {
     setShowSidebar(!showSidebar);
   };
 
-  // Select a chat user
+  // Handle selecting a user from the list
   const selectUserChat = (username) => {
-    setSelectedUser(username);
-    setMessages([]);
+     if (username === selectedUser) return; // Avoid re-selecting the same user
+
+    console.log("Selected chat:", username);
+    setSelectedUser(username); // Set the active chat partner
+    setMessages([]); // Clear messages from the previous chat immediately
+    setSearchQuery(''); // Clear search input
+    setSearchResults([]); // Clear search results list
+    // Hide sidebar on mobile after selection
     if (window.innerWidth < 768) {
       setShowSidebar(false);
     }
+    // Chat history fetching is handled by the useEffect watching selectedUser
   };
 
+  // Format timestamp for display (e.g., 10:30 AM)
+  const formatTime = (timestamp) => {
+    if (!timestamp) return '';
+    try {
+      const date = new Date(timestamp);
+      // Adjust options as needed for desired format
+      return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+    } catch (e) {
+        console.error("Error formatting time:", e);
+        return "Invalid time";
+    }
+  };
+
+  // Format date for message grouping headers (e.g., Today, Yesterday, MM/DD/YYYY)
+  const formatMessageDate = (timestamp) => {
+     if (!timestamp) return '';
+     try {
+        const date = new Date(timestamp);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return 'Today';
+        if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+        // Adjust options for desired date format
+        return date.toLocaleDateString([], { year: 'numeric', month: 'numeric', day: 'numeric' });
+    } catch(e) {
+        console.error("Error formatting message date:", e);
+        return "Invalid date";
+    }
+  };
+
+
+  // --- Render Logic ---
   return (
     <div className="chat-container">
-      {/* Sidebar - Chat list */}
+      {/* Sidebar Section */}
       <div className={`chat-sidebar ${showSidebar ? 'show' : 'hide'}`}>
         <div className="sidebar-header">
           <h2>Chats</h2>
           <div className="header-icons">
-            <MoreVertical size={20} className="icon" />
+            <MoreVertical size={20} className="icon" /> {/* Placeholder Icon */}
           </div>
         </div>
 
+        {/* Search Input */}
         <div className="search-container">
           <div className="search-wrapper">
             <Search size={18} className="search-icon" />
@@ -184,15 +699,12 @@ const Chat = () => {
           </div>
         </div>
 
+        {/* Chat List (Shows search results or recent chats) */}
         {searchResults.length > 0 ? (
           <ul className="chat-list search-results">
             {searchResults.map((u) => (
-              <li
-                key={u.username}
-                onClick={() => selectUserChat(u.username)}
-                className="chat-list-item"
-              >
-                <div className="avatar">{u.username.charAt(0).toUpperCase()}</div>
+              <li key={u.username} onClick={() => selectUserChat(u.username)} className="chat-list-item">
+                <div className="avatar">{u.username?.charAt(0).toUpperCase()}</div>
                 <div className="chat-info">
                   <div className="chat-name">{u.username}</div>
                 </div>
@@ -207,27 +719,28 @@ const Chat = () => {
                 onClick={() => selectUserChat(chat.username)}
                 className={`chat-list-item ${selectedUser === chat.username ? 'active' : ''}`}
               >
-                <div className="avatar">{chat.username.charAt(0).toUpperCase()}</div>
+                <div className="avatar">{chat.username?.charAt(0).toUpperCase()}</div>
                 <div className="chat-info">
                   <div className="chat-name">{chat.username}</div>
-                  <div className="chat-last-message">{chat.lastMessage}</div>
+                  <div className="chat-last-message">{chat.lastMessage || 'No messages yet'}</div> {/* Display last message */}
                 </div>
                 <div className="chat-meta">
                   <span className="chat-time">{formatTime(chat.timestamp)}</span>
-                  {chat.unreadCount > 0 && (
-                    <span className="unread-count">{chat.unreadCount}</span>
-                  )}
+                  {/* Optional: Unread count display */}
+                  {/* {chat.unreadCount > 0 && <span className="unread-count">{chat.unreadCount}</span>} */}
                 </div>
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </div> {/* End Sidebar */}
 
-      {/* Main chat area */}
+      {/* Main Chat Area Section */}
       <div className="chat-main">
         {selectedUser ? (
+          // View when a chat is selected
           <>
+            {/* Chat Header */}
             <div className="chat-header">
               {window.innerWidth < 768 && (
                 <ArrowLeft size={24} className="back-button" onClick={toggleSidebar} />
@@ -235,85 +748,105 @@ const Chat = () => {
               <div className="avatar">{selectedUser.charAt(0).toUpperCase()}</div>
               <div className="user-info">
                 <h3>{selectedUser}</h3>
-                <span className="user-status">Online</span>
+                <span className="user-status">Online</span> {/* TODO: Implement presence system */}
               </div>
               <div className="header-actions">
-                <PhoneCall 
-                  size={20} 
-                  className="call-icon" 
-                  onClick={initiateCall} 
-                  title="Call"
+                {/* Call Button - Disabled during an active call */}
+                <PhoneCall
+                  size={20}
+                  className={`call-icon ${isCallActive ? 'disabled' : ''}`}
+                  onClick={!isCallActive ? handleInitiateCall : undefined} // Only clickable when not in call
+                  title={isCallActive ? "Call in progress" : "Start voice call"}
                 />
-                <MoreVertical size={20} className="icon" />
+                <MoreVertical size={20} className="icon" /> {/* Placeholder */}
               </div>
             </div>
 
+            {/* Messages Container */}
             <div className="messages-container">
               {messages.length > 0 ? (
                 <div className="messages-list">
                   {messages.map((msg, idx) => {
-                    const isCurrentUser = msg.sender === user.username;
+                    const isCurrentUser = msg.sender === user?.username;
                     const messageDate = formatMessageDate(msg.timestamp);
-                    const showDateHeader = idx === 0 || 
-                      formatMessageDate(messages[idx-1]?.timestamp) !== messageDate;
-                    
+                    // Determine if the date header should be shown for this message
+                    const showDateHeader = idx === 0 || formatMessageDate(messages[idx - 1]?.timestamp) !== messageDate;
+
                     return (
-                      <React.Fragment key={idx}>
+                      <React.Fragment key={msg.id || idx}> {/* Use message ID if available, fallback to index */}
                         {showDateHeader && (
-                          <div className="date-separator">
-                            <span>{messageDate}</span>
-                          </div>
+                          <div className="date-separator"><span>{messageDate}</span></div>
                         )}
-                        <div
-                          className={`message ${isCurrentUser ? 'sent' : 'received'}`}
-                        >
+                        <div className={`message ${isCurrentUser ? 'sent' : 'received'}`}>
                           <div className="message-content">
-                            {msg.message}
-                            <span className="message-time">
-                              {formatTime(msg.timestamp)}
-                            </span>
+                            {msg.message || msg.content} {/* Handle potential variations in message field name */}
+                            <span className="message-time">{formatTime(msg.timestamp)}</span>
                           </div>
                         </div>
                       </React.Fragment>
                     );
                   })}
+                  {/* Invisible div to target for scrolling */}
                   <div ref={messagesEndRef} />
                 </div>
               ) : (
-                <div className="empty-chat">
-                  <p>Start a conversation with {selectedUser}</p>
-                </div>
+                <div className="empty-chat"><p>Start the conversation with {selectedUser}!</p></div>
               )}
-            </div>
+            </div> {/* End Messages Container */}
 
+            {/* Message Input Area */}
             <div className="message-input-container">
               <input
                 type="text"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Type a message"
+                // Send on Enter key press
+                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey ? (e.preventDefault(), sendMessage()) : null}
+                placeholder="Type a message..."
                 className="message-input"
+                disabled={isCallActive} // Optionally disable input during call
               />
-              <button 
-                onClick={sendMessage} 
+              <button
+                onClick={sendMessage}
                 className="send-button"
-                disabled={!message.trim()}
+                disabled={!message.trim() || isCallActive} // Disable if no message or during call
               >
                 <Send size={20} />
               </button>
-            </div>
-          </>
+            </div> {/* End Message Input Area */}
+
+            {/* --- Voice Call UI Overlay --- */}
+            {/* Conditionally render the call component when isCallActive is true */}
+            {isCallActive && selectedUser && user?.username && (
+              <div className="call-ui-overlay">
+                <div className="call-box">
+                  {/* Ensure a stable key for the component instance */}
+                  <VoiceCallComponent
+                    key={`${user.username}-call-${selectedUser}`} // Unique key for this call pairing
+                    username={user.username} // Current user's username
+                    receiver={selectedUser} // The user being called
+                    onEndCall={handleEndCall} // Callback function when call ends
+                    isCaller={isMakingCall} // Boolean: true if we initiated, false if receiving
+                  />
+                  {/* Note: The "End Call" button is now managed *inside* VoiceCallComponent */}
+                </div>
+              </div>
+            )}
+            {/* --- End Voice Call UI Overlay --- */}
+
+          </> // End selected chat view
         ) : (
+          // View when no chat is selected
           <div className="no-chat-selected">
             <div className="welcome-message">
-              <h3>Welcome to the Chat</h3>
-              <p>Select a user from the list to start chatting</p>
+              <h3>Welcome, {user?.username || 'Guest'}!</h3>
+              <p>Select a chat from the sidebar to start messaging or calling.</p>
+              {/* You could add an illustration or more info here */}
             </div>
           </div>
-        )}
-      </div>
-    </div>
+        )} {/* End conditional rendering for selectedUser */}
+      </div> {/* End Main Chat Area */}
+    </div> // End Chat Container
   );
 };
 

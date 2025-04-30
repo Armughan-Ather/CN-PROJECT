@@ -44,33 +44,13 @@ def login_user(request):
         return Response({"error" : "Invalid Username"},status=status.HTTP_401_UNAUTHORIZED)
     if not user.check_password(data['password']):
         return Response({"error":"Incorrect Password"},status=status.HTTP_401_UNAUTHORIZED)
-    
+     
     refresh=RefreshToken.for_user(user)
     return Response({
         "refresh":str(refresh),
         "access":str(refresh.access_token),
         "username":user.username
     })
-'''
-@api_view(['POST'])
-def login_user(request):
-    data = request.data
-    try:
-        user = User.objects.get(username=data['username'])
-    except User.DoesNotExist:
-        return Response({"error": "Invalid Username"}, status=status.HTTP_400_BAD_REQUEST)
-
-    if not user.check_password(data['password']):
-        return Response({"error": "Invalid Password"}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Generate JWT Tokens
-    refresh = RefreshToken.for_user(user)
-    return Response({
-        "refresh": str(refresh),
-        "access": str(refresh.access_token),
-        "username": user.username
-    })
-'''
 
 # 🔹 Logout API (Blacklist Token)
 @api_view(['POST'])

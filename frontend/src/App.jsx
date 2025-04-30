@@ -12,7 +12,7 @@ import {
   MDBCardTitle,
   MDBCardText,
 } from "mdb-react-ui-kit";
-import Chat from "./components/Chat/Chat";
+import Chat from "./components/Chat/chat";
 
 function App() {
   const [message, setMessage] = useState("");
