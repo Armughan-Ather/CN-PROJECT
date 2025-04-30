@@ -12,6 +12,7 @@ import {
   MDBCardTitle,
   MDBCardText,
 } from "mdb-react-ui-kit";
+import Chat from "./components/Chat/Chat";
 
 function App() {
   const [message, setMessage] = useState("");
@@ -29,7 +30,7 @@ function App() {
       {/* Default route - Login Page */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-
+      <Route path="/chat" element={<Chat/>}/>
 
       {/* Example Test Page (React-Django Connection) */}
       <Route
