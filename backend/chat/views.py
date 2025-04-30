@@ -153,7 +153,7 @@ def search_users(request):
     if not query:
         return Response([])
 
-    users = User.objects.filter(username__icontains=query).exclude(id=request.user.id)[:10]
+    users = User.objects.filter(username__icontains=query).exclude(username=request.user.username)
     return Response([{"username": user.username} for user in users])
 
 
