@@ -129,6 +129,7 @@ class CallSignalingConsumer(AsyncWebsocketConsumer):
             if not receiver_username or not signal_type:
                 print(f"CallSignalingConsumer: Received invalid data from {self.user}: Missing receiver or type. Data: {text_data}")
                 return
+            
 
             target_group = f"call_{receiver_username}"
             print(f"CallSignalingConsumer: Relaying signal '{signal_type}' from {self.user} to {target_group}")

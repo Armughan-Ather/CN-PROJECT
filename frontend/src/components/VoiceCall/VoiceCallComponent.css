@@ -1,85 +1,188 @@
+/* VoiceCallComponent.css */
+
 .voice-call-container {
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    background-color: #f9f9f9;
+    background-color: rgba(33, 41, 54, 0.95);
+    color: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
-    color: #333;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    justify-content: space-between;
+    gap: 32px;
+  }
+  
+  /* Hide audio elements */
+  .hidden-audio {
+    display: none;
+  }
+  
+  /* Call header with avatar and info */
+  .call-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    padding: 16px 0;
+  }
+  
+  .caller-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #3a4454;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: bold;
+    margin-bottom: 16px;
+  }
+  
+  .caller-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .caller-name {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 0;
   }
   
   .call-status {
-    font-weight: bold;
-    font-size: 1.1em;
-    margin-bottom: 5px;
+    color: #a0aec0;
+    font-size: 16px;
+    margin: 0;
   }
   
-  .call-participants {
-      font-size: 0.9em;
-      color: #555;
-      margin-bottom: 15px;
-  }
-  
+  /* Call controls */
   .call-controls {
     display: flex;
-    gap: 20px;
-    margin-top: 10px;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 16px;
+    width: 100%;
   }
   
   .control-button {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    padding: 10px 15px;
+    justify-content: center;
     border: none;
-    border-radius: 50%; /* Make button round */
-    background-color: #eee;
     cursor: pointer;
-    transition: background-color 0.2s ease;
-    width: 60px; /* Fixed width */
-    height: 60px; /* Fixed height */
-    justify-content: center; /* Center icon */
-  }
-  
-  .control-button span {
-      display: none; /* Hide text label by default, rely on icon */
-       /* Or optionally show below icon:
-       margin-top: 5px;
-       font-size: 0.7em;
-       */
-  }
-  
-  
-  .control-button:hover {
-    background-color: #ddd;
-  }
-  
-  .control-button.muted {
-    background-color: #ffdddd; /* Light red background when muted */
-  }
-  .control-button.muted:hover {
-    background-color: #ffcccc;
-  }
-  
-  
-  .control-button.end-call {
-    background-color: #ff4d4d; /* Red for end call */
+    transition: all 0.2s ease;
+    background-color: #3a4454;
     color: white;
   }
   
-  .control-button.end-call:hover {
-    background-color: #cc0000;
+  .control-button:hover {
+    transform: scale(1.05);
   }
   
-  /* Hide the actual audio element visually */
-  .voice-call-container audio {
-    /* display: none; */ /* Keep it for debugging if needed */
-     width: 0;
-     height: 0;
-     position: absolute;
-     top: -9999px;
-     left: -9999px;
+  .control-button:active {
+    transform: scale(0.95);
+  }
+  
+  .control-button.active {
+    background-color: #4a5568;
+  }
+  
+  .end-call-button, .reject-button {
+    background-color: #e53e3e;
+  }
+  
+  .end-call-button:hover, .reject-button:hover {
+    background-color: #c53030;
+  }
+  
+  .accept-button {
+    background-color: #48bb78;
+  }
+  
+  .accept-button:hover {
+    background-color: #38a169;
+  }
+  
+  .mute-button.active, .speaker-button.active {
+    background-color: #f56565;
+  }
+  
+  .dismiss-button {
+    width: auto;
+    border-radius: 28px;
+    padding: 0 24px;
+    background-color: #4299e1;
+  }
+  
+  .dismiss-button:hover {
+    background-color: #3182ce;
+  }
+  
+  /* Animation for calling/ringing status */
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.6;
+    }
+  }
+  
+  .call-status {
+    animation: pulse 1.5s infinite ease-in-out;
+  }
+  
+  /* Status-specific animations */
+  .voice-call-container[data-status="connected"] .call-status,
+  .voice-call-container[data-status="ended"] .call-status,
+  .voice-call-container[data-status="rejected"] .call-status,
+  .voice-call-container[data-status="error"] .call-status {
+    animation: none;
+  }
+  
+  /* Incoming call controls specific styles */
+  .incoming-call-controls {
+    display: flex;
+    gap: 32px;
+  }
+  
+  /* Add responsive adjustments for smaller screens */
+  @media (max-width: 480px) {
+    .voice-call-container {
+      padding: 16px;
+      max-width: 100%;
+    }
+    
+    .call-controls {
+      gap: 16px;
+    }
+    
+    .control-button {
+      width: 48px;
+      height: 48px;
+    }
+    
+    .caller-avatar {
+      width: 64px;
+      height: 64px;
+      font-size: 24px;
+    }
+    
+    .incoming-call-controls {
+      gap: 24px;
+    }
   }
