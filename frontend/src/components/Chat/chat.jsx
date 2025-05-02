@@ -2610,6 +2610,29 @@ const Chat = () => {
   }, [user]);
 
   useEffect(() => {
+    const fetchSearchResults = async () => {
+      if (searchQuery.trim() === '') {
+        setSearchResults([]);
+        return;
+      }
+  
+      try {
+        const res = await axios.get(`http://127.0.0.1:8000/chat/search-users/?q=${searchQuery}`, {
+          headers: { Authorization: `Bearer ${user.accessToken}` },
+        });
+        setSearchResults(res.data);
+      } catch (err) {
+        console.error('Search error:', err);
+        setSearchResults([]);
+      }
+    };
+  
+    const delayDebounce = setTimeout(fetchSearchResults, 300); // debounce typing
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery, user?.accessToken]);
+  
+
+  useEffect(() => {
     if (selectedUser && user?.accessToken) {
       fetchChatHistory(selectedUser);
     } else {
