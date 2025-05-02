@@ -4,6 +4,7 @@ import { getTestMessage } from "./api";
 
 import Login from "./components/Login/Login"; // Import the Login page
 import Register from "./components/Register/Register";
+import Call from "./components/VoiceCall/VoiceCallComponentv2"
 import {
   MDBBtn,
   MDBContainer,
@@ -31,6 +32,7 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/chat" element={<Chat/>}/>
+      <Route path="/call" element={<Call/>}/>
 
       {/* Example Test Page (React-Django Connection) */}
       <Route

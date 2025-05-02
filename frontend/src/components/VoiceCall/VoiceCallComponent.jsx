@@ -27,6 +27,9 @@ const VoiceCallComponent = ({
   // DOM Refs
   const localAudio = useRef(null);
   const remoteAudio = useRef(null);
+  const pendingCandidates = [];
+let remoteDescriptionSet = false;
+
   
   // Call setup on component mount
   useEffect(() => {
@@ -88,8 +91,7 @@ const VoiceCallComponent = ({
       // Handle ICE candidates
       peerConnection.current.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log('Sending ICE candidate');
-          sendSignal('ice-candidate', { candidate: event.candidate });
+          sendSignal('ice-candidate', event.candidate);
         }
       };
       
@@ -176,23 +178,40 @@ const VoiceCallComponent = ({
               handleCallEnded('Call ended by other user');
               break;
               
-            case 'offer':
-              // Received an offer (as call receiver)
-              console.log('Received call offer, creating answer...');
-              await handleReceivedOffer(data.payload);
-              break;
+              case 'offer':
+                console.log('offer')
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(data.payload));
+                remoteDescriptionSet = true;
               
-            case 'answer':
-              // Received an answer to our offer (as caller)
-              console.log('Received call answer');
-              await handleReceivedAnswer(data.payload);
-              break;
+                // Apply any queued candidates now
+                for (const candidate of pendingCandidates) {
+                  await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                }
+                pendingCandidates.length = 0;
               
-            case 'ice-candidate':
-              // Received ICE candidate from peer
-              console.log('Received ICE candidate');
-              await handleReceivedICECandidate(data.payload);
-              break;
+                // Continue to create and send answer...
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                sendSignal('answer', answer);
+                break;
+              
+              
+              case 'answer':
+                console.log('answer')
+                await peerConnection.current.setRemoteDescription(
+                  new RTCSessionDescription(data.payload)
+                );
+                break;
+              
+                case 'ice-candidate':
+                  console.log('ice-candidate')
+                  if (!remoteDescriptionSet) {
+                    pendingCandidates.push(data.payload);
+                  } else {
+                    await peerConnection.addIceCandidate(new RTCIceCandidate(data.payload));
+                  }
+                  break;
+                
               
             default:
               console.log('Unhandled signal type:', data.type);
@@ -218,13 +237,12 @@ const VoiceCallComponent = ({
     
     try {
       console.log('Creating offer...');
-      const offer = await peerConnection.current.createOffer({
-        offerToReceiveAudio: true,
-        offerToReceiveVideo: false
-      });
-      
-      console.log('Setting local description...');
+      // caller, when making the offer
+      const offer = await peerConnection.current.createOffer();
       await peerConnection.current.setLocalDescription(offer);
+      sendSignal('offer', offer);        // <-- just the { type:"offer", sdp:"..." } object
+
+      console.log('Setting local description...');
       
       // First send a call request
       if (isCaller && callStatus === 'calling') {
@@ -234,7 +252,7 @@ const VoiceCallComponent = ({
       
       // Then send the WebRTC offer
       console.log('Sending offer signal');
-      sendSignal('offer', { sdp: offer });
+      //sendSignal('offer', { sdp: offer });
       
     } catch (error) {
       console.error('Error creating offer:', error);
@@ -244,25 +262,14 @@ const VoiceCallComponent = ({
   
   // Handle received WebRTC offer (receiver)
   async function handleReceivedOffer(offer) {
-    console.log("Received call offer, creating answer...");
-    if (!peerConnection) initializePeerConnection();
+    // offer is already an RTCSessionDescriptionInit
+    await peerConnection.current.setRemoteDescription(
+      new RTCSessionDescription(offer)
+    );
   
-    await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-    isRemoteDescriptionSet = true;
-  
-    // Now add any buffered ICE candidates
-    iceCandidateQueue.forEach(candidate => {
-      try {
-        peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (error) {
-        console.error("Error applying buffered ICE candidate:", error);
-      }
-    });
-    iceCandidateQueue.length = 0; // clear the buffer
-  
-    const answer = await peerConnection.createAnswer();
-    await peerConnection.setLocalDescription(answer);
-    sendSignal({ type: 'answer', payload: answer });
+    const answer = await peerConnection.current.createAnswer();
+    await peerConnection.current.setLocalDescription(answer);
+    sendSignal('answer', answer);    // <-- send back the full { type:"answer", sdp:"..." }
   }
   
   
@@ -573,5 +580,3 @@ const VoiceCallComponent = ({
 };
 
 export default VoiceCallComponent;
-
-
